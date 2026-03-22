@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Important Links Manager</title>
+  <style>
+    :root {
+      --bg: #f2f5f9;
+      --surface: #ffffff;
+      --surface-soft: #f8fbff;
+      --text: #0f172a;
+      --muted: #475569;
+      --primary: #0f766e;
+      --primary-hover: #115e59;
+      --border: #dbe4ef;
+      --danger: #b91c1c;
+      --shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+      --input-bg: #ffffff;
+      --body-bg:
+        radial-gradient(circle at 10% -5%, #d9f5ef 0%, transparent 45%),
+        radial-gradient(circle at 100% 0%, #dde9ff 0%, transparent 50%),
+        #f2f5f9;
+      --body-font: "Segoe UI", Tahoma, Verdana, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: var(--body-font);
+      color: var(--text);
+      background: var(--body-bg);
+      min-height: 100vh;
+      padding: 24px 16px 40px;
+      overflow-x: hidden;
+    }
+
+    body.theme-dark {
+      --bg: #0b1220;
+      --surface: #111a2f;
+      --surface-soft: #0f172a;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --primary: #14b8a6;
+      --primary-hover: #0d9488;
+      --border: #223149;
+      --danger: #ef4444;
+      --shadow: 0 14px 32px rgba(2, 6, 23, 0.55);
+      --input-bg: #0b1324;
+      --body-bg:
+        radial-gradient(circle at 0% 0%, rgba(20, 184, 166, 0.18), transparent 42%),
+        radial-gradient(circle at 100% 0%, rgba(56, 189, 248, 0.14), transparent 42%),
+        #070d19;
+    }
+
+    body.theme-matrix {
+      --bg: #020806;
+      --surface: rgba(3, 15, 8, 0.86);
+      --surface-soft: rgba(2, 10, 6, 0.72);
+      --text: #b8ffca;
+      --muted: #7ce69a;
+      --primary: #00c853;
+      --primary-hover: #00a844;
+      --border: #0d4720;
+      --danger: #ff4d4d;
+      --shadow: 0 0 24px rgba(0, 200, 83, 0.22);
+      --input-bg: rgba(1, 14, 7, 0.92);
+      --body-bg: radial-gradient(circle at 50% -10%, rgba(0, 200, 83, 0.08), transparent 46%), #020806;
+      --body-font: "Consolas", "Lucida Console", monospace;
+    }
+
+    .container {
+      max-width: 980px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 2;
+    }
+
+    .fx-layer {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 1;
+    }
+
+    body.theme-matrix .fx-layer {
+      display: none;
+    }
+
+    .matrix-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+    }
+
+    body.theme-matrix .matrix-canvas {
+      opacity: 0.28;
+    }
+
+    .fx-dot {
+      position: absolute;
+      border-radius: 50%;
+      opacity: 0.35;
+      filter: blur(1px);
+      animation-name: floatOrb;
+      animation-timing-function: ease-in-out;
+      animation-iteration-count: infinite;
+      will-change: transform, opacity;
+    }
+
+    .topbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+
+    .topbar-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .theme-select {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 0.9rem;
+      color: var(--text);
+      background: var(--surface);
+      min-width: 126px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.6rem;
+      letter-spacing: 0.2px;
+    }
+
+    .subtitle {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 0.92rem;
+      font-weight: 600;
+      padding: 10px 14px;
+      transition: 0.2s ease;
+    }
+
+    .btn-primary {
+      color: #ffffff;
+      background: var(--primary);
+      box-shadow: 0 8px 16px rgba(15, 118, 110, 0.25);
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+    }
+
+    .btn-ghost {
+      color: var(--muted);
+      background: var(--surface-soft);
+      border: 1px solid var(--border);
+    }
+
+    .btn-danger {
+      color: var(--danger);
+      background: #fff5f5;
+      border: 1px solid #fecaca;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+    }
+
+    .form-container {
+      display: none;
+      margin-bottom: 16px;
+      padding: 16px;
+      animation: slideDown 0.25s ease;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field.full {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      font-size: 0.84rem;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    input, textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 0.92rem;
+      font-family: inherit;
+      background: var(--input-bg);
+      color: var(--text);
+    }
+
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
+    }
+
+    textarea {
+      min-height: 90px;
+      resize: vertical;
+    }
+
+    .actions {
+      grid-column: 1 / -1;
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 4px;
+    }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 10px;
+      padding: 12px;
+      margin-bottom: 14px;
+      align-items: center;
+    }
+
+    .toolbar input {
+      margin: 0;
+    }
+
+    .stats {
+      color: var(--muted);
+      font-size: 0.87rem;
+      white-space: nowrap;
+    }
+
+    .stats.bump {
+      animation: bump 0.35s ease;
+    }
+
+    .toolbar-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .data-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 12px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      opacity: 0;
+      transform: translateY(16px) scale(0.98);
+    }
+
+    .card.reveal {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      transition: opacity 0.35s ease, transform 0.35s ease;
+    }
+
+    .card h3 {
+      margin: 0;
+      font-size: 1.05rem;
+    }
+
+    .card p {
+      margin: 0;
+      color: var(--text);
+      line-height: 1.45;
+      white-space: pre-wrap;
+    }
+
+    .code {
+      margin: 0;
+      background: rgba(1, 13, 7, 0.9);
+      color: #d1fae5;
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 0.84rem;
+      max-height: 180px;
+      overflow: auto;
+    }
+
+    .card-link-btn {
+      display: inline-block;
+      align-self: flex-start;
+      color: #ffffff;
+      background: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.85rem;
+      padding: 8px 12px;
+      border-radius: 9px;
+      transition: 0.2s ease;
+    }
+
+    .card-link-btn:hover {
+      background: var(--primary-hover);
+    }
+
+    .card-actions {
+      margin-top: 4px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 24px 12px;
+      color: var(--muted);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes bump {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes floatOrb {
+      0% { transform: translateY(0px) translateX(0px); opacity: 0.18; }
+      50% { transform: translateY(-22px) translateX(8px); opacity: 0.36; }
+      100% { transform: translateY(0px) translateX(0px); opacity: 0.2; }
+    }
+
+    @media (max-width: 700px) {
+      .topbar-actions {
+        width: 100%;
+      }
+
+      .theme-select {
+        flex: 1;
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .toolbar {
+        grid-template-columns: 1fr;
+      }
+
+      .stats {
+        white-space: normal;
+      }
+
+      .toolbar-actions {
+        justify-content: stretch;
+      }
+
+      .toolbar-actions .btn {
+        flex: 1;
+      }
+
+      .actions {
+        justify-content: stretch;
+      }
+
+      .actions .btn {
+        flex: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <canvas class="matrix-canvas" id="matrixCanvas"></canvas>
+  <div class="fx-layer" id="fxLayer"></div>
+  <main class="container">
+    <section class="topbar">
+      <div>
+        <h1>Important Links</h1>
+        <p class="subtitle">Store useful links, notes and code snippets in one place.</p>
+      </div>
+      <div class="topbar-actions">
+        <select id="themeSelect" class="theme-select" onchange="applyTheme(this.value, true)">
+          <option value="light">Light Theme</option>
+          <option value="dark">Dark Theme</option>
+          <option value="matrix">Matrix Theme</option>
+        </select>
+        <button class="btn btn-primary" id="toggleBtn" type="button" onclick="toggleForm()">+ Add New</button>
+      </div>
+    </section>
+
+    <section class="panel form-container" id="formPanel">
+      <form id="entryForm" class="form-grid" onsubmit="event.preventDefault(); saveData();">
+        <div class="field">
+          <label for="name">Title *</label>
+          <input type="text" id="name" placeholder="Example: Flutter docs" required>
+        </div>
+        <div class="field">
+          <label for="link">Link</label>
+          <input type="url" id="link" placeholder="https://example.com">
+        </div>
+        <div class="field full">
+          <label for="description">Description</label>
+          <textarea id="description" placeholder="Quick summary or why this is useful"></textarea>
+        </div>
+        <div class="field full">
+          <label for="code">Code Snippet</label>
+          <textarea id="code" placeholder="Optional code or command"></textarea>
+        </div>
+        <div class="actions">
+          <button class="btn btn-ghost" type="button" onclick="clearForm()">Clear</button>
+          <button class="btn btn-primary" id="saveBtn" type="submit">Save Entry</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="panel toolbar">
+      <input type="search" id="searchInput" placeholder="Search by title, description, code or link..." oninput="renderData()">
+      <span class="stats" id="countInfo">0 entries</span>
+      <div class="toolbar-actions">
+        <button class="btn btn-ghost" type="button" onclick="exportData()">Export</button>
+        <button class="btn btn-ghost" type="button" onclick="triggerImport()">Import</button>
+        <button class="btn btn-danger" type="button" onclick="clearAll()">Clear All</button>
+      </div>
+      <input type="file" id="importFile" accept="application/json" style="display:none" onchange="importDataFromFile(event)">
+    </section>
+
+    <section class="data-list" id="dataList"></section>
+  </main>
+
+  <script>
+    const storageKey = "savedData";
+    const themeKey = "savedTheme";
+    let data = JSON.parse(localStorage.getItem(storageKey)) || [];
+    let editId = null;
+    let matrixInterval = null;
+
+    data = data.map(item => ({
+      id: item.id || Date.now() + Math.floor(Math.random() * 100000),
+      name: item.name || "",
+      description: item.description || "",
+      code: item.code || "",
+      link: item.link || ""
+    }));
+    localStorage.setItem(storageKey, JSON.stringify(data));
+
+    function toggleForm() {
+      const panel = document.getElementById("formPanel");
+      const btn = document.getElementById("toggleBtn");
+      const isVisible = panel.style.display === "block";
+      panel.style.display = isVisible ? "none" : "block";
+      btn.textContent = isVisible ? "+ Add New" : "Close Form";
+    }
+
+    function clearForm() {
+      document.getElementById("entryForm").reset();
+      editId = null;
+      document.getElementById("saveBtn").textContent = "Save Entry";
+      document.getElementById("name").focus();
+    }
+
+    function saveData() {
+      const name = document.getElementById("name").value.trim();
+      const description = document.getElementById("description").value.trim();
+      const code = document.getElementById("code").value.trim();
+      const link = document.getElementById("link").value.trim();
+
+      if (!name) {
+        alert("Title is required.");
+        return;
+      }
+
+      if (editId !== null) {
+        data = data.map(item => item.id === editId ? { ...item, name, description, code, link } : item);
+      } else {
+        const entry = {
+          id: Date.now(),
+          name,
+          description,
+          code,
+          link
+        };
+        data.unshift(entry);
+      }
+
+      localStorage.setItem(storageKey, JSON.stringify(data));
+      clearForm();
+      document.getElementById("formPanel").style.display = "none";
+      document.getElementById("toggleBtn").textContent = "+ Add New";
+      renderData();
+    }
+
+    function editItem(id) {
+      const item = data.find(entry => entry.id === id);
+      if (!item) return;
+
+      document.getElementById("name").value = item.name || "";
+      document.getElementById("description").value = item.description || "";
+      document.getElementById("code").value = item.code || "";
+      document.getElementById("link").value = item.link || "";
+      editId = id;
+      document.getElementById("saveBtn").textContent = "Update Entry";
+
+      const panel = document.getElementById("formPanel");
+      panel.style.display = "block";
+      document.getElementById("toggleBtn").textContent = "Close Form";
+      document.getElementById("name").focus();
+    }
+
+    function removeItem(id) {
+      data = data.filter(item => item.id !== id);
+      localStorage.setItem(storageKey, JSON.stringify(data));
+      renderData();
+    }
+
+    function exportData() {
+      const payload = {
+        exportedAt: new Date().toISOString(),
+        entries: data
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "important-links-backup.json";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function triggerImport() {
+      const input = document.getElementById("importFile");
+      input.value = "";
+      input.click();
+    }
+
+    function importDataFromFile(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(loadEvent) {
+        try {
+          const parsed = JSON.parse(loadEvent.target.result);
+          const incoming = Array.isArray(parsed) ? parsed : parsed.entries;
+          if (!Array.isArray(incoming)) {
+            alert("Invalid backup format.");
+            return;
+          }
+
+          data = incoming.map(item => ({
+            id: item.id || Date.now() + Math.floor(Math.random() * 100000),
+            name: item.name || "",
+            description: item.description || "",
+            code: item.code || "",
+            link: item.link || ""
+          }));
+
+          localStorage.setItem(storageKey, JSON.stringify(data));
+          renderData();
+          alert(`Imported ${data.length} entries successfully.`);
+        } catch (error) {
+          alert("Could not import file. Please use a valid JSON backup.");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function clearAll() {
+      if (!data.length) {
+        return;
+      }
+      if (!confirm("Delete all saved entries?")) {
+        return;
+      }
+      data = [];
+      localStorage.setItem(storageKey, JSON.stringify(data));
+      renderData();
+    }
+
+    function escapeHTML(text) {
+      return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function animateCards() {
+      const cards = document.querySelectorAll(".card");
+      cards.forEach((card, index) => {
+        setTimeout(() => {
+          card.classList.add("reveal");
+        }, Math.min(index * 70, 420));
+      });
+    }
+
+    function bumpStats() {
+      const stats = document.getElementById("countInfo");
+      stats.classList.remove("bump");
+      void stats.offsetWidth;
+      stats.classList.add("bump");
+    }
+
+    function createFloatingOrbs() {
+      const layer = document.getElementById("fxLayer");
+      layer.innerHTML = "";
+      const orbCount = 12;
+      for (let i = 0; i < orbCount; i++) {
+        const orb = document.createElement("span");
+        const size = 24 + Math.floor(Math.random() * 52);
+        const hue = i % 2 === 0 ? "15, 118, 110" : "59, 130, 246";
+        orb.className = "fx-dot";
+        orb.style.width = `${size}px`;
+        orb.style.height = `${size}px`;
+        orb.style.left = `${Math.random() * 100}%`;
+        orb.style.top = `${Math.random() * 100}%`;
+        orb.style.background = `radial-gradient(circle at 35% 35%, rgba(${hue},0.45), rgba(${hue},0.08))`;
+        orb.style.animationDuration = `${6 + Math.random() * 8}s`;
+        orb.style.animationDelay = `${Math.random() * 4}s`;
+        layer.appendChild(orb);
+      }
+    }
+
+    function stopMatrixRain() {
+      if (matrixInterval) {
+        clearInterval(matrixInterval);
+        matrixInterval = null;
+      }
+    }
+
+    function startMatrixRain() {
+      const canvas = document.getElementById("matrixCanvas");
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      const resize = () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      };
+      resize();
+
+      const charset = "01ABCDEFGHIJKLMNOPQRSTUVWXYZ#$%&*";
+      const fontSize = 14;
+      const columns = Math.max(1, Math.floor(canvas.width / fontSize));
+      const drops = Array(columns).fill(0);
+
+      stopMatrixRain();
+      matrixInterval = setInterval(() => {
+        ctx.fillStyle = "rgba(0, 6, 2, 0.14)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#39ff88";
+        ctx.font = `${fontSize}px monospace`;
+
+        for (let i = 0; i < drops.length; i++) {
+          const text = charset[Math.floor(Math.random() * charset.length)];
+          const x = i * fontSize;
+          const y = drops[i] * fontSize;
+          ctx.fillText(text, x, y);
+          if (y > canvas.height && Math.random() > 0.975) {
+            drops[i] = 0;
+          } else {
+            drops[i] += 1;
+          }
+        }
+      }, 45);
+    }
+
+    function applyTheme(theme, persist) {
+      const selectedTheme = ["light", "dark", "matrix"].includes(theme) ? theme : "light";
+      document.body.classList.remove("theme-dark", "theme-matrix");
+
+      if (selectedTheme === "dark") {
+        document.body.classList.add("theme-dark");
+        stopMatrixRain();
+      } else if (selectedTheme === "matrix") {
+        document.body.classList.add("theme-matrix");
+        startMatrixRain();
+      } else {
+        stopMatrixRain();
+      }
+
+      const themeSelect = document.getElementById("themeSelect");
+      if (themeSelect.value !== selectedTheme) {
+        themeSelect.value = selectedTheme;
+      }
+      if (persist) {
+        localStorage.setItem(themeKey, selectedTheme);
+      }
+    }
+
+    function renderData() {
+      const list = document.getElementById("dataList");
+      const search = document.getElementById("searchInput").value.trim().toLowerCase();
+
+      const filtered = data.filter(item => {
+        if (!search) return true;
+        return [item.name, item.description, item.code, item.link]
+          .join(" ")
+          .toLowerCase()
+          .includes(search);
+      });
+
+      document.getElementById("countInfo").textContent =
+        `${filtered.length} of ${data.length} entr${data.length === 1 ? "y" : "ies"}`;
+
+      if (!filtered.length) {
+        list.innerHTML = '<div class="panel empty">No entries found. Add a new item or adjust search.</div>';
+        bumpStats();
+        return;
+      }
+
+      list.innerHTML = filtered.map(item => {
+        const safeName = escapeHTML(item.name || "");
+        const safeDescription = escapeHTML(item.description || "");
+        const safeCode = escapeHTML(item.code || "");
+        const safeLink = escapeHTML(item.link || "");
+        const hasLink = Boolean(item.link);
+
+        return `
+          <article class="card">
+            <h3>${safeName}</h3>
+            ${safeDescription ? `<p>${safeDescription}</p>` : ""}
+            ${safeCode ? `<pre class="code">${safeCode}</pre>` : ""}
+            ${hasLink ? `<a class="card-link-btn" href="${safeLink}" target="_blank" rel="noopener noreferrer">Click Now</a>` : ""}
+            <div class="card-actions">
+              <button class="btn btn-ghost" type="button" onclick="editItem(${item.id})">Edit</button>
+              <button class="btn btn-danger" type="button" onclick="removeItem(${item.id})">Delete</button>
+            </div>
+          </article>
+        `;
+      }).join("");
+      animateCards();
+      bumpStats();
+    }
+
+    window.addEventListener("resize", () => {
+      if (document.body.classList.contains("theme-matrix")) {
+        startMatrixRain();
+      }
+    });
+
+    applyTheme(localStorage.getItem(themeKey) || "light", false);
+    createFloatingOrbs();
+    renderData();
+  </script>
+</body>
+</html>
